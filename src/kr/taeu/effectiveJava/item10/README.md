@@ -18,5 +18,36 @@ equals 메서드를 재정의할 땐 다음과 같은 규약을 꼭 지켜야한
 * 반사성(reflexivity): null이 아닌 모든 참조 값 x에 대해, x.equals(x)는 true다.
 * 대칭성(symmetry): null이 아닌 모든 참조 값 x, y에 대해, x.equals(y)가 true면 y.equals(x)도 true다.
 * 추이성(transitivity): null이 아닌 모든 참조 값 x, y, z에 대해, x.equals(y)가 true이고 y.equals(z)도 true면 x.equals(z)도 true다. -> 구체 클래스를 확장해 새로운 값을 추가하면서 equals 규약을 만족시킬 방법은 존재하지 않는다.
-* 일관성(consistency): null이 아닌 모든 참조 값 x, y에 대해, x.equals(y)를 반복해서 호출하면 항상 true를 반환하거나 항상 false를 반환한다.
+* 일관성(consistency): null이 아닌 모든 참조 값 x, y에 대해, x.equals(y)를 반복해서 호출하면 항상 true를 반환하거나 항상 false를 반환한다. -> 두 객체가 같다면(어느 하나 혹은 두 객체 모두가 수정되지 않는 한) 앞으로도 영원히 같아야 한다.
 * null-아님: null이 아닌 모든 참조 값 x에 대해, x.equals(null)은 false다.
+
+# 양질의 equals 메서드 구현 방법
+1. == 연산자를 이용하여 입력이 자기 자신의 참조인지 확인한다. 자기 자신이면 true를 반환한다. 비교작업이 복잡한 상황일 때 값어치를 할 것이다.
+2. instanceof 연산자로 입력이 올바른 타입인지 확인한다. 그렇지 않다면 false를 반환한다. 여기서 올바른 타입이란 equals가 정의된 클래스 인 것이 보통이지만, 가끔은 클래스가 구현한 특정 인터페이스가 될 수도 있다. 이런 인터페이스를 구현한 클래스라면 equals에서 해당 인터페이스를 사용해야 한다.(Set, List, Map, 등의 컬렉션 인터페이스들이 여기에 해당)
+3. 입력을 올바른 타입으로 형변환한다. 앞서 2번에서 instanceof 검사를 했기 때문에 이 단계는 100% 성공한다.
+4. 입력 객체와 자기 자신의 대응 되는 '핵심' 필드들이 모두 일치하는지 하나씩 검사한다. 2단계에서 인터페이스를 사용했다면 입력의 필드 값을 가져올 때도 그 인터페이스의 메서드를 사용해야 한다.
+
+# 각종 타입의 비교 방법
+* float와 double 필드를 제외한 리터럴 타입의 필드는 == 연산자로 비교
+* 참조 타입의 필드는 각각의 equals 메서드
+* float와 double 필드는 각각 정적 메서드인 Float.compare(float, float)와 Double.compare(double, double)로 비교한다. float와 double은 Float,NaN,-0.0f, 특수한 부동소수 값 등을 다뤄야 하기 때문.(Float.equals 문서참조)
+* 배열의 모든 요소가 핵심 필드라면 Arrays.equals 메서드들 중 하나를 사용하자.
+* 때로는 null도 정상 값으로 취급하는 참조 타입 필드도 있다. 이런 필드는 정적메서드인 Objects.equals(Object, Object)로 비교해 NullPointerException 발생을 예방하자.
+* CaseInsensitiveString 예처럼 비교하기가 아주 복잡한 필드를 가진 클래스도 있다. 이럴 때는 그 필드의 표준형(canonical form)을 저장해둔 후 표준형끼리 비교하면 훨씬 경제적이다.(불변 객체에 적합, 가변 객체라면 값이 변경될 때마다 표준형을 최신화해야함)
+* 어떤 필드를 먼저 비교하냐가 equals의 성능을 좌우한다. 비교하는 비용(다를 가능성이 큰) 필드를 먼저 비교.
+
+**equals를 다 구현했다면 세 가지만 자문해보자. 대칭적인가? 추이성이 있는가? 일관적인가?** 자문에서 멈추지 말고 단위테스트를 작성해 실행해보자.(AutoValue를 이용해 작성했다면 테스트를 생략해도 안심할 수 있다.)
+
+# 주의사항
+* equals를 재정의할 땐 hashCode도 반드시 재정의하자(아이템11)
+* 너무 복잡하게 해결하려 들지 말자. 필드들의 동치성만 검사해도 equals 규약을 어렵지 않게 지킬 수 있다.
+* Object 외의 타입을 매개변수로 받는 equals 메서드는 선언하지 말자. 많은 프로그래머가 equals를 다음과 같이 작성해놓고 문제의 원인을 찾아 헤맨다.
+```java
+    // 잘못된 예 - 입력 타입은 반드시 Object여야 한다.
+    public boolean equals(MyClass o) {
+        ...
+    }
+```
+이 메서드는 Object.equals를 재정의한 게 아니다. 입력 타입이 Object가 아니므로 재정의가 아니라 다중정의한 것이다.
+
+equals(hashCode도 마찬가지)를 작성하고 테스트하는 일은 지루하고 이를 테스트하는 코드도 항상 뻔한다. 이럴때 구글이 만든 AutoValue 프레임워크를 사용하면 된다. IDE에서도 지원을 하지만 AutoValue만큼 깔끔하거나 읽기 좋지는 않다. 하지만 사람이 작성하는 것보다 IDE에 맡기는 편이 좋다. 실수를 안하기 때문에..
