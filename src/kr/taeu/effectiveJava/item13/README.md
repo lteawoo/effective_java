@@ -25,4 +25,4 @@ Cloneable 인터페이스는 메서드가 하나도 없다. 그렇다면 뭐를 
 ```
 Object의 clone 메서드는 Object를 반환하지만 PhoneNumber의 clone 메서드는 PhoneNumber를 반환하게 했다. 자바가 공변 반환 타이핑(convariant return typing)을 지원하니 가능하고 권장하는 방식이다.(절대 실패하지 않는다.)
 
-클라이언트가 형변환하지 않아도 되게끔 해주자, 이를 위해 앞 코드에서는 super.clone에서 얻은 객체를 반환하기 전에 PhoneNumber로 형변환하였다.(절대 실패하지 않는다)
+클라이언트가 형변환하지 않아도 되게끔 해주자, 이를 위해 앞 코드에서는 super.clone에서 얻은 객체를 반환하기 전에 PhoneNumber로 형변환 하였다.(절대 실패하지 않는다)
