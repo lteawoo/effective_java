@@ -7,6 +7,7 @@ import java.util.HashSet;
 /*
  * 상속을 잘못 사용함.
  */
+@SuppressWarnings("serial")
 public class InstrumentedHashSet1<E> extends HashSet<E> {
   // 추가된 원소의 수
   private int addCount = 0;
