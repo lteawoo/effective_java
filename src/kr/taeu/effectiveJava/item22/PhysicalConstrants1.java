@@ -3,7 +3,7 @@ package kr.taeu.effectiveJava.item22;
 
 /*
  * 상수 필드로만 가득 찬 인터페이스
- * 사용금지! 안티패턴
+ * 사용금지! 안티 패턴
  */
 public interface PhysicalConstrants1 {
   // 아보가드로 수 (1/몰)
