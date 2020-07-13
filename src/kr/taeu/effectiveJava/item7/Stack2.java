@@ -26,7 +26,7 @@ public class Stack2 {
     }
     Object result = elements[--size];
     elements[size] = null;  // 다 쓴 참조 해제
-    return elements[--size];
+    return result;
   }
   
   private void ensureCapacity() {
