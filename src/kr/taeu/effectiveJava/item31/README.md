@@ -97,7 +97,7 @@ public static void swap(List<?> list, int i, int j) {
     list.set(i, list.set(j, list.get(i)));
 }
 ```
-이 코드를 컴파일하면 에러가 나온다. list.get(i)를 list.set할 수 없다. 원인은 리스트의 타입이 List&lt;?&gt;인데 List&lt;?&gt;에는 null외에는 어떤 값도 넣을 수 없다는 데 있다. 다행히 형변환이나 리스트의 로 타입을 사용하지 않고도 해결할 길이 있다. 바로 와일드카드 타입의 실제 타입을 알려주는 메서드를 private 도우미 메서드로 따로 작성하여 활용하는 방법이다.
+이 코드를 컴파일하면 에러가 나온다. list.get(i)를 list.set 할 수 없다. 원인은 리스트의 타입이 List&lt;?&gt;인데 List&lt;?&gt;에는 null외에는 어떤 값도 넣을 수 없다는 데 있다. 다행히 형변환이나 리스트의 로 타입을 사용하지 않고도 해결할 길이 있다. 바로 와일드카드 타입의 실제 타입을 알려주는 메서드를 private 도우미 메서드로 따로 작성하여 활용하는 방법이다.
 ```java
 public static void swap(List<?> list, int i, int j) {
     swapHelper(list i, j);
