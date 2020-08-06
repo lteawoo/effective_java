@@ -101,3 +101,25 @@ public class Main3 {
 ```
 Collectors.groupingBy 메서드는 mapFatory 매개변수에 원하는 맵 구현체를 명시해 호출 할 수 있다.
 
+두 열거 타입 값들을 매핑하느라 ordinal을 (두번이나) 쓴 배열들의 배열을 본 적이 있을 것이다. 다음은 이방식을 적용해 두 가지 상태(Phase)를 전이(Transition)와 매핑하도록 구현한 것이다.
+```java
+public enum Phase1 {
+    SOLID, LIQUID, GAS;
+
+    public enum Transition {
+        MELT, FREEZE, BOIL, CONDENSE, SUBLIME, DEPOSIT, SOLID, LIQUID, GAS;
+
+        // 행은 from의 ordinal을, 열은 to의 ordinal을 인덱스로 쓴다.
+        private static final Transition[][] TRANSITIONS = {
+            { null, MELT, SUBLIME },
+            { FREEZE, null, BOIL },
+            { DEPOSIT, CONDENSE, null }
+        };
+
+        // 한 상태에서 다른 상태로의 전이를 반환한다.
+        public static Transition from (Phase1 from, Phase1 to) {
+            return TRANSITIONS[from.ordinal()][to.ordinal()];
+        }
+    }
+}
+```
