@@ -9,6 +9,9 @@ local.properties
 .settings/
 .loadpath
 .recommenders
+.idea/
+*.iml
+.gradle
 
 # External tool builders
 .externalToolBuilders/

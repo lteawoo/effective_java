@@ -123,3 +123,52 @@ public enum Phase1 {
     }
 }
 ```
+앞의 예제와 마찬가지로 컴파일러는 ordinal과 배열 인덱스의 관계를 알 도리가 없다. 즉, Phase나 Phase.Transition 열거 타입을 수정하면서 상전이 표 TRANSITIONS를 함께 수정 하지 않거나 실수로 잘못 수정하면 런타임 오류가 날 것이다.
+
+EnumMap을 사용해보자, 이전 상태와 이후 상태가 필요하니, 맵 2개를 중첩하면 쉽게 해결 할 수 있다.
+```java
+public enum Phase2 {
+    SOLID, LIQUID, GAS;
+
+    public enum Transition {
+        MELT(SOLID, LIQUID), FREEZE(LIQUID, SOLID),
+        BOIL(LIQUID, GAS), CONDENSE(GAS, LIQUID),
+        SUBLIME(SOLID, GAS), DEPOSIT(GAS, SOLID);
+
+        private final Phase2 from;
+        private final Phase2 to;
+
+        Transition(Phase2 from, Phase2 to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        // 상전이 맵을 초기화
+        private static final Map<Phase2, Map<Phase2, Transition>> m = Stream.of(values())
+                .collect(Collectors.groupingBy(t -> t.from,
+                        () -> new EnumMap<>(Phase2.class),
+                        Collectors.toMap(t -> t.to,
+                                t -> t,
+                                (x, y) -> y,
+                                () -> new EnumMap<>(Phase2.class))));
+
+        public static Transition from(Phase2 from, Phase2 to) {
+            return m.get(from).get(to);
+        }
+    }
+}
+```
+이 맵의 타임인 Map<Phase2, Map<Phase2, Transition>>은 "이전 상태에서 '이후 상태에서 전이로의 맵'에 대응시키는 맵"이라는 뜻이다.
+
+이제 여기에 PLASMA를 추가해보자. 이 상태와 연결된 전이는 2개다. 첫 번째는 기체에서 플라스마로 변하는 이온화(IONIZE)이고, 둘째는 플라스마에서 기체로 변하는 탈이온화(DEIONIZE)다.
+```java
+public enum Phase3 {
+    SOLID, LIQUID, GAS, PLASMA;
+
+    public enum Transition {
+        MELT(SOLID, LIQUID), FREEZE(LIQUID, SOLID),
+        BOIL(LIQUID, GAS), CONDENSE(GAS, LIQUID),
+        SUBLIME(SOLID, GAS), DEPOSIT(GAS, SOLID),
+        IONIZE(GAS, PLASMA), DEIONIZE(PLASMA, GAS);
+...
+```
