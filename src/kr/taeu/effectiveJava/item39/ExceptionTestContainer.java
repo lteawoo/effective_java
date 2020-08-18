@@ -5,11 +5,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * 배열 매개변수를 받는 애너테이션 타입
- */
+// 컨테이너 애너테이션
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ExceptionTest {
-    Class<? extends Throwable> value();
+public @interface ExceptionTestContainer {
+    ExceptionTest3[] value();
 }

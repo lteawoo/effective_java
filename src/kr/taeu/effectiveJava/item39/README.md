@@ -89,4 +89,173 @@ public @interface ExceptionTest {
     Class<? extends Throwable> value();
 }
 ```
-이 애너테이션의 매개변수 타입은 Class<? extends Throwable>이다. 여기서의 와일드카드 타입은 많은 의미를 담고 있다. "Throwable을 확장한 클래스의 Class 객체"라는 뜻이며, 따라서 모든 예외(와 오류) 타입을 다 수용한다. 이는 한정적 타입 토큰의 또 하나의 활용 사례다. 그리고 다음은 이 애너테이션을 실제 활용하는 못브이다. class 리터럴은 애너테이션 매개변수의 값으로 사용됐다.
+이 애너테이션의 매개변수 타입은 Class<? extends Throwable>이다. 여기서의 와일드카드 타입은 많은 의미를 담고 있다. "Throwable을 확장한 클래스의 Class 객체"라는 뜻이며, 따라서 모든 예외(와 오류) 타입을 다 수용한다. 이는 한정적 타입 토큰의 또 하나의 활용 사례다. 그리고 다음은 이 애너테이션을 실제 활용하는 모습이다. class 리터럴은 애너테이션 매개변수의 값으로 사용됐다.
+```java
+public class Sample2 {
+    @ExceptionTest(ArithmeticException.class)
+    public static void m1() { // 성공해야 한다.
+        int i = 0;
+        i = i / i;
+    }
+
+    @ExceptionTest(ArithmeticException.class)
+    public static void m2() { // 실패해야 한다. (다른 예외 발생)
+        int[] a = new int[0];
+        int i = a[1];
+    }
+
+    @ExceptionTest(ArithmeticException.class)
+    public static void m3() { // 실패해야 한다. (예외 발생X)
+
+    }
+}
+
+```
+다음으로 테스트도구를 수정해보자
+```java
+public class RunTests2 {
+    public static void main(String[] args) throws Exception {
+        int tests = 0;
+        int passed = 0;
+        Class<?> testClass = Class.forName(args[0]);
+        for (Method m : testClass.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(ExceptionTest.class)) {
+                tests++;
+                try {
+                    m.invoke(null);
+                    System.out.printf("테스트 %s 실패: 예외를 던지지 않음%n", m);
+                } catch (InvocationTargetException wrappedExc) {
+                    Throwable exc = wrappedExc.getCause();
+                    Class<? extends Throwable> excType = m.getAnnotation(ExceptionTest.class).value();
+                    if (excType.isInstance(exc)) {
+                        passed++;
+                    } else {
+                        System.out.printf("테스트 %s 실패: 기대한 예외 %s, 발생한 예외 %s%n", m, excType.getName(), exc);
+                    }
+                } catch (Exception exc) {
+                    System.out.println("잘못 사용한 @ExceptionTest: " + m);
+                }
+            }
+        }
+    }
+}
+
+```
+애너테이션 매개변수의 값을 추출하여 테스트 메서드가 올바른 예외를 던지는지 확인하는데 사용한다. 형변환 코드가 없으니 ClassCastException 걱정은 없다. 따라서 테스트 프로그램이 문제없이 컴파일되면 애너테이션 매개변수가 가리키는 예외가 올바른 타입이라는 뜻이다.
+
+예외를 여러 개 명시하고 그중 하나가 발생하면 성공하게 만들 수도 있다. 애너테이션 메커니즘에는 이런 쓰임에 아주 유용한 기능이 기본으로 들어 있다. @ExceptionTest 애너테이션의 매개변수 타입을 Class 객체의 배열로 수정해보자.
+```java
+/**
+ * 배열 매개변수를 받는 애너테이션 타입
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ExceptionTest {
+    Class<? extends Throwable> value();
+}
+
+```
+단일 원소 배열에 최적화했지만, 앞서의 @ExceptionTest들도 모두 수정 없이 수용한다. 원소가 여럿인 배열을 지정할 때는 다음과 같이 원소들을 중괄호로 감싸고 쉼표로 구분해주기만 하면 된다.
+```java
+public class RunTests3 {
+    public static void main(String[] args) throws Exception {
+        int tests = 0;
+        int passed = 0;
+        Class<?> testClass = Class.forName(args[0]);
+        for (Method m : testClass.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(ExceptionTest2.class)) {
+                tests++;
+                try {
+                    m.invoke(null);
+                    System.out.printf("테스트 %s 실패: 예외를 던지지 않음%n", m);
+                } catch (InvocationTargetException wrappedExc) {
+                    Throwable exc = wrappedExc.getTargetException().getCause();
+                    int oldPassed = passed;
+                    Class<? extends Throwable>[] excTypes = m.getAnnotation(ExceptionTest2.class).value();
+                    for (Class<? extends Throwable> excType : excTypes) {
+                        if (excType.isInstance(exc)) {
+                            passed++;
+                            break;
+                        }
+                    }
+                    if (passed == oldPassed) {
+                        System.out.printf("테스트 %s 실패: %s %n", m, exc);
+                    }
+                }
+            }
+        }
+    }
+}
+
+```
+자바8에서는 여러 개의 값을 받는 애너테이션을 다른 방식으로도 만들 수 있다. 배열 매개변수를 사용하는 대신 애너테이션에 @Repeatable 메타애너테이션을 다는 방식이다. @Repeatable을 단 애너테이션은 하나의 프로그램 요소에 여러 번 달 수 있다.
+
+단 주의 할 점이 있다.
+1. @Repeatable을 단 애너테이션을 반환하는 '컨테이너 애너테이션'을 하나 더 정의하고, @Repeatable에 이 컨테이너 애너테이션의 class 객체를 매개변수로 전달해야 한다
+2. 컨테이너 애너테이션은 내부 애너테이션 타입의 배열을 반환하는 value 메서드를 정의해야 한다.
+3. 컨테이너 애너테이션 타입에는 적절한 보존 정책(@Retention)과 적용 대상(@Target)을 명시해야 한다. 그렇지 않으면 컴파일되지 않을 것이다.
+```java
+// 반복가능한 애너테이션 타입
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@Repeatable(ExceptionTestContainer.class)
+public @interface ExceptionTest {
+    Class<? extends Throwable> value();
+}
+
+// 컨테이너 애너테이션
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ExceptionTestContainer {
+    ExceptionTest3[] value();
+}
+
+// 반복 가능 애너테이션을 두 번 단 코드
+public class Sample4 {
+    @ExceptionTest3(IndexOutOfBoundsException.class)
+    @ExceptionTest3(NullPointerException.class)
+    public static void doublyBad() {    // 성공해야 한다.
+        List<String> list = new ArrayList<>();
+
+        // 자바명세에 따르면 다음 메서드는 IndexOutOfBoundsException
+        // NullPointerException을 던질 수 있다.
+        list.addAll(5, null);
+    }
+}
+
+```
+반복 가능 애너테이션을 여러 개 달면 하나만 달았을 때와 구분하기 위해 해당 '컨테이너' 애너테이션 타입이 적용된다. getAnnotationByType 메서드는 이 둘을 구분하지 않아서 반복 가능 애너테이션과 그 컨테이너 애너테이션을 모두 가져오지만, isAnnotationPresent 메서드는 둘을 명확히 구분한다.
+
+그래서 달려 있는 수와 상관없이 모두 검사하려면 둘을 따로따로 확인해야 한다.
+```java
+public class RunTests4 {
+    public static void main(String[] args) throws Exception {
+        int tests = 0;
+        int passed = 0;
+        Class<?> testClass = Class.forName(args[0]);
+        for (Method m : testClass.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(ExceptionTest3.class)
+                || m.isAnnotationPresent(ExceptionTestContainer.class)) {
+                tests++;
+                try {
+                    m.invoke(null);
+                    System.out.printf("테스트 %s 실패: 예외를 던지지 않음%n", m);
+                } catch (InvocationTargetException wrappedExc) {
+                    Throwable exc = wrappedExc.getTargetException().getCause();
+                    int oldPassed = passed;
+                    ExceptionTest3[] excTests = m.getAnnotationsByType(ExceptionTest3.class);
+                    for (ExceptionTest3 excTest : excTests) {
+                        if (excTest.value().isInstance(exc)) {
+                            passed++;
+                            break;
+                        }
+                    }
+                    if (passed == oldPassed) {
+                        System.out.printf("테스트 %s 실패: %s %n", m, exc);
+                    }
+                }
+            }
+        }
+    }
+}
+```
