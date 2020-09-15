@@ -85,3 +85,21 @@ public class PowerSet {
     }
 }
 ```
+AbstractCollection을 활용해서 Collection 구현체를 구현할 때는 Iterable용 메서드 외에 2개만 더구현하면 된다. Contains와 size다. 이 메서드들은 손쉽게 효율적으로 구현할 수 있다.
+
+때로는 단순히 구현하기 쉬운 쪽을 선택하기도 한다. 예컨대 입력 리스트의 부분리스트를 모두 반환하는 메서드를 작성한다고 해보자. 필요한 부분리스트를 만들어 표준 컬렉션에 담는 코드는 단 3줄이면 충분하다. 하지만 이 컬렉션은 입력 리스트 크기의 거듭제곱만큼 메모리를 차지한다.
+
+입력리스트의 모든 부분리스트를 스트림으로 구현하기는 어렵지 않다 .약간의 통찰만 있으면 된다. 첫 번째 원소를 포함하는 부분리스트를 그 리스트의 프리픽스(prefix)라 해보자. 예를 들어 (a, b, c)의 프리픽스는 (a), (ab), (abc)가 된다.같은 식으로 마지막 원소를 포함하는 부분리스트를 그 리스트의 서픽스(suffix)라 하자, 따라서 (a,b,c)의 서픽스는 (a,b,c), (b,c), (c)가 된다.
+
+어떤 리스트의 부분리스트는 그리스트의 프리픽스의 서픽스(혹은 서픽스의 프리픽스)에 빈 리스트 하나만 추가하면 된다. 이과정은 직관적으로 구현할 수 있다.
+```java
+// 입력 리스트의 모든 부분리스트를 스트림으로 반환한다.
+public class SubLists {
+  public static <E> Stream<List<E>> of(List<E> list) {
+    return Stream.concat(Stream.of(Collections.emptyList()),
+      prefixes(list).flatMap(SubLists::suffixes));
+  }
+
+
+}
+```
