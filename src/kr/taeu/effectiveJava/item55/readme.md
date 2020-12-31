@@ -70,3 +70,13 @@ Toy toy = max(toys).orElseThrow(TemperTanTrumException::new);
 ```java
 Element lastNobleGas = max(Elements.NOBLE_GASES).get();
 ```
+
+반환값으로 옵셔널을 사용한다고 해서 무조건 득이 되는 건 아니다. 컬렉션, 스트림, 배열, 옵셔널 같은 컨테이너 타입은 옵셔널로 감싸면 안 된다.
+Optional<List<T>>를 반환하기보다는 빈 List<T>를 반환하는게 좋다.
+
+그렇다면 어느 경우에 T 대신 Optional<T>를 반환하는게 좋을까, **결과가 없을 수 있으며, 클라이언트가 이 상황을 특별하게 처리해야 한다면 Optional<T>를 반환한다.**
+그런데 이렇게 하더라도 Optional<T>를 반환하는 데는 대가가 따른다. Optional도 엄연히 새로 할당하고 초기화해야 하는 객체고, 
+그 안에서 값을 꺼내려면 메서드를 호출해야 하니 한 단계를 더 가는 셈이다.
+
+박싱된 기본 타입을 담는 옵셔널은 기본 타입자체보다 더욱 무거울 수 밖에 없다. 값을 두 겹이나 감싸기 때문이다. 그래서 자바 API 설계자들은
+int, long, double 전용 옵셔널을 준비해놨다. 바로 OptionalInt, OptionalLong 등이다. 이렇게 대체제가 있으니 박싱 클래스는 해당 클래스를 이용하자
